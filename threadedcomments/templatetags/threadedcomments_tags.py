@@ -94,7 +94,9 @@ class BaseThreadedCommentNode(AdminOverrideCommentNode):
         qs = super(BaseThreadedCommentNode, self).get_queryset(context)
         if self.limit:
             parent_qs = qs.exclude(parent__isnull=False).order_by('-newest_activity', '-submit_date').values_list('pk', flat=True)[:self.limit]
-            qs = qs.filter(Q(parent_id__in=parent_qs) | Q(pk__in=parent_qs)).distinct()
+            ids = [pk for pk in parent_qs]
+
+            qs = qs.filter(Q(parent_id__in=ids) | Q(pk__in=ids)).distinct()
         if self.flat:
             qs = qs.order_by('-submit_date')
         elif self.root_only:
@@ -251,7 +253,7 @@ class RenderCommentListNode(CommentListNode):
         extra_kw = {}
         if tokens[-2] == 'limit':
             if tokens[-1].isdigit():
-                extra_kw['limit'] = tokens.pop(-1)  # removes limit integer
+                extra_kw['limit'] = int(tokens.pop(-1))  # removes limit integer
                 tokens.pop(-1)  # removes 'limit'
             else:
                 raise template.TemplateSyntaxError(
